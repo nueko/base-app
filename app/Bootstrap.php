@@ -3,8 +3,8 @@
 namespace Baseapp;
 
 use Baseapp\Library\I18n;
-use Baseapp\Library\Debug;
 use Baseapp\Library\Email;
+use Phalcon\Debug\Dump;
 
 /**
  * Bootstrap
@@ -165,6 +165,7 @@ class Bootstrap extends \Phalcon\Mvc\Application
         $this->_di->set('filter', function() {
             $filter = new \Phalcon\Filter();
             $filter->add('repeat', new Extension\Repeat());
+            $filter->add('escape', new Extension\Escape());
             return $filter;
         });
     }
@@ -201,7 +202,10 @@ class Bootstrap extends \Phalcon\Mvc\Application
                 "host" => $config->database->host,
                 "username" => $config->database->username,
                 "password" => $config->database->password,
-                "dbname" => $config->database->dbname
+                "dbname" => $config->database->dbname,
+                "options" => array(
+                    \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
+                )
             ));
         });
     }
@@ -329,7 +333,7 @@ class Bootstrap extends \Phalcon\Mvc\Application
                 'controller' => 1,
                 'action' => 'index'
             ));
-            
+
             $router->add('/{action:(buy|contact)}[/]?', array(
                 'module' => 'frontend',
                 'controller' => 'static',
@@ -418,10 +422,10 @@ class Bootstrap extends \Phalcon\Mvc\Application
 
     /**
      * Log message into file, notify the admin on stagging/production
-     * 
+     *
      * @package     base-app
      * @version     2.0
-     * 
+     *
      * @param mixed $messages messages to log
      */
     public static function log($messages)
@@ -430,7 +434,7 @@ class Bootstrap extends \Phalcon\Mvc\Application
 
         if ($config->app->env == "development") {
             foreach ($messages as $key => $message) {
-                echo Debug::dump($message, $key);
+                echo Dump::one($message, $key);
             }
             exit();
         } else {
@@ -443,34 +447,42 @@ class Bootstrap extends \Phalcon\Mvc\Application
                 } else {
                     $logger->log($message);
                 }
-                $log .= Debug::dump($message, $key);
+                $log .= Dump::one($message, $key);
             }
-            $logger->close();
 
             if ($config->app->env != "testing") {
                 $email = new Email();
                 $email->prepare(__('Something is wrong!'), $config->app->admin, 'error', array('log' => $log));
-                $email->Send();
+
+                if ($email->Send() !== true) {
+                    $logger->log($email->ErrorInfo);
+                }
             }
+
+            $logger->close();
         }
     }
 
     /**
      * Catch the exception and log it, display pretty view
-     * 
+     *
      * @package     base-app
      * @version     2.0
-     * 
+     *
      * @param \Exception $e
      */
     public static function exception(\Exception $e)
     {
         $config = \Phalcon\DI::getDefault()->getShared('config');
+        $errors = array(
+            'error' => get_class($e) . '[' . $e->getCode() . ']: ' . $e->getMessage(),
+            'info' => $e->getFile() . '[' . $e->getLine() . ']',
+            'debug' => "Trace: \n" . $e->getTraceAsString() . "\n",
+        );
 
         if ($config->app->env == "development") {
             // Display debug output
-            $debug = new \Phalcon\Debug();
-            $debug->onUncaughtException($e);
+            echo Dump::all($errors);
         } else {
             // Display pretty view of the error
             $di = new \Phalcon\DI\FactoryDefault();
@@ -481,11 +493,6 @@ class Bootstrap extends \Phalcon\Mvc\Application
             echo $view->render('error', array('i18n' => I18n::instance(), 'config' => $config));
 
             // Log errors to file and send email with errors to admin
-            $errors = array(
-                'error' => get_class($e) . '[' . $e->getCode() . ']: ' . $e->getMessage(),
-                'info' => $e->getFile() . '[' . $e->getLine() . ']',
-                'debug' => "Trace: \n" . $e->getTraceAsString() . "\n",
-            );
             \Baseapp\Bootstrap::log($errors);
         }
     }

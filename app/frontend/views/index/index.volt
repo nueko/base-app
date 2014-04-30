@@ -24,7 +24,6 @@
         <ul>
             <li>{{ linkTo(['https://github.com/mruz/base-app/wiki/Arr', 'Arr', 'local': false, 'target': '_blank']) }}</li>
             <li>{{ linkTo(['https://github.com/mruz/base-app/wiki/Auth', 'Auth', 'local': false, 'target': '_blank']) }}</li>
-            <li>{{ linkTo(['https://github.com/mruz/base-app/wiki/Debug', 'Debug', 'local': false, 'target': '_blank']) }}</li>
             <li>{{ linkTo(['https://github.com/mruz/base-app/wiki/Email', 'Email', 'local': false, 'target': '_blank']) }}</li>
             <li>{{ linkTo(['https://github.com/mruz/base-app/wiki/I18n', 'I18n', 'local': false, 'target': '_blank']) }}</li>
             <li>{{ linkTo(['https://github.com/mruz/base-app/wiki/Tool', 'Tool', 'local': false, 'target': '_blank']) }}</li>

@@ -28,6 +28,10 @@ class VoltPHPFunctions
         if (function_exists($name)) {
             return $name . '(' . $arguments . ')';
         }
+        
+        if ($name == 'dump') {
+            return '\Phalcon\Debug\Dump::all(' . $arguments . ')';
+        }
     }
 
     /**
